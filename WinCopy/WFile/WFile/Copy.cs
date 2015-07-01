@@ -30,9 +30,31 @@ namespace WFile
         void Match();
     }
 
+    public abstract class CancelAction
+    {
+        public event Action<bool> HasCancelled;
+
+        private readonly CancellationTokenSource cancelTrigger;
+
+        public CancelAction()
+        {
+            cancelTrigger = new CancellationTokenSource();
+        }
+
+        public void Cancel(object sender, EventArgs e)
+        {
+            cancelTrigger.Cancel();
+
+            HasCancelled(true);
+        }
+
+
+
+    }
+
     #region Copy
 
-        public class Copy : ICopy, IException
+        public class Copy : CancelAction, ICopy, IException
         {
             public event Action<Exception> OnError;
 
@@ -48,7 +70,7 @@ namespace WFile
 
             private int cancel;
 
-            private readonly CancellationTokenSource cancelTrigger;
+            //private readonly CancellationTokenSource cancelTrigger;
 
             private readonly string destination;
 
@@ -73,14 +95,19 @@ namespace WFile
 
             public Copy(string to)
             {
-                cancelTrigger = new CancellationTokenSource();
+                //CancelTrigger = new CancellationTokenSource();
 
                 destination = to;
             }
 
-            public void Cancel(object sender, EventArgs e)
+            //public void Cancel(object sender, EventArgs e)
+            //{
+            //    cancelTrigger.Cancel();
+            //}
+
+            private void HasCancelledAction(bool value)
             {
-                cancelTrigger.Cancel();
+                cancel = -1;
             }
 
             public virtual void PerformAction(List<Item> items)
@@ -89,12 +116,19 @@ namespace WFile
 
                 foreach (var item in items)
                 {
-                    if (cancelTrigger.IsCancellationRequested)
+                    if (cancel == -1)
                     {
                         OnError(new Exception("Action cancelled by operator."));
 
                         return;
                     }
+
+                    //if (cancelTrigger.IsCancellationRequested)
+                    //{
+                    //    OnError(new Exception("Action cancelled by operator."));
+
+                    //    return;
+                    //}
 
                     if (string.IsNullOrWhiteSpace(item.Destination))
                     {
@@ -117,6 +151,8 @@ namespace WFile
                     try
                     {
                         Parallel.Invoke(() => WCopy(item));
+
+                        Thread.Sleep(5000);
 
                         if (OnProgressStep != null)
                         {
@@ -172,7 +208,7 @@ namespace WFile
                 return results;
             }
 
-            #region WIN_32 : Recursive directory functions
+            #region WIN_32 : Recursive directory function
 
             /// <summary>
             /// Recursive function to populate a MyImage list.
@@ -213,7 +249,7 @@ namespace WFile
 
                             var itm = new Item(name) {
 
-                                Destination = subfolder != SLASH ? subfolder + SLASH : null,
+                                Destination = subfolder != SLASH ? subfolder.Substring(1) + SLASH : null,
 
                                 Source = directory + (subfolder == SLASH ? name : SLASH + name),
 
@@ -357,9 +393,4 @@ namespace WFile
         }
 
     #endregion
-
-
-    #region
-    #endregion
-
 }
