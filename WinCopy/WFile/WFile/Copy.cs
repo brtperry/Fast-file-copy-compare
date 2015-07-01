@@ -99,53 +99,53 @@ namespace WFile
                 cancelPending = -1;
             }
 
-            public virtual void PerformAction(List<Item> items)
+            public virtual async Task PerformAction(List<Item> items)
             {
                 var counter = items.Count;
 
-                foreach (var item in items)
-                {
-                    if (cancelPending == -1)
-                    {
-                        ExceptionHappended(new Exception("Action cancelled by operator."));
+                await Task.Run(() =>
 
-                        return;
-                    }
+                    Parallel.ForEach(items, item => {
 
-                    if (string.IsNullOrWhiteSpace(item.Destination))
-                    {
-                        item.Destination = destination;
-                    }
-                    else
-                    {
-                        var sub = destination + item.Destination;
-
-                        if (!Directory.Exists(sub))
+                        if (cancelPending == -1)
                         {
-                            Directory.CreateDirectory(sub);
+                            ExceptionHappended(new Exception("Action cancelled by operator."));
+
+                            return;
                         }
 
-                        item.Destination = sub;
-                    }
-
-                    item.Destination += item.Name;
-
-                    try
-                    {
-                        Parallel.Invoke(() => WCopy(item));
-
-                        Thread.Sleep(5000);
-
-                        if (OnProgressStep != null)
+                        if (string.IsNullOrWhiteSpace(item.Destination))
                         {
-                            OnProgressStep(--counter);
+                            item.Destination = destination;
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        ExceptionHappended(ex);
-                    }
-                }
+                        else
+                        {
+                            var sub = destination + item.Destination;
+
+                            if (!Directory.Exists(sub))
+                            {
+                                Directory.CreateDirectory(sub);
+                            }
+
+                            item.Destination = sub;
+                        }
+
+                        item.Destination += item.Name;
+
+                        try
+                        {
+                            Parallel.Invoke(() => WCopy(item));
+
+                            if (OnProgressStep != null)
+                            {
+                                OnProgressStep(--counter);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ExceptionHappended(ex);
+                        }
+                    }));
             }
 
             private void ExceptionHappended(Exception ex)
