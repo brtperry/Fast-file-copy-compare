@@ -180,11 +180,16 @@ namespace WFile
 
     #region Collector
 
-        public class Collector : IException
+        public class Collector : CancelAction, IException
         {
             public event Action<Exception> OnError;
 
             private int cancelPending;
+
+            public Collector()
+            {
+                CancellationPending += HasCancelledAction;
+            }
 
             public virtual IEnumerable<Item> Collect(string folder)
             {
