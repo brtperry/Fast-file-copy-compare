@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using System.Runtime.InteropServices;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 using System.IO;
@@ -30,13 +29,13 @@ namespace WFile
         void Match();
     }
 
-    public abstract class CancelAction
+    public abstract class Cancellation
     {
         public event Action<bool> CancellationPending;
 
         private readonly CancellationTokenSource cancelTrigger;
 
-        public CancelAction()
+        public Cancellation()
         {
             cancelTrigger = new CancellationTokenSource();
         }
@@ -51,7 +50,7 @@ namespace WFile
 
     #region Copy
 
-        public class Copy : CancelAction, ICopy, IException
+        public class Copy : Cancellation, ICopy, IException
         {
             public event Action<Exception> OnError;
 
@@ -108,7 +107,7 @@ namespace WFile
                 {
                     if (cancelPending == -1)
                     {
-                        OnError(new Exception("Action cancelled by operator."));
+                        ExceptionHappended(new Exception("Action cancelled by operator."));
 
                         return;
                     }
@@ -144,9 +143,14 @@ namespace WFile
                     }
                     catch (Exception ex)
                     {
-                        OnError(ex);
+                        ExceptionHappended(ex);
                     }
                 }
+            }
+
+            private void ExceptionHappended(Exception ex)
+            {
+                if (OnError != null) OnError(ex);
             }
 
             private void WCopy(Item item)
@@ -180,7 +184,7 @@ namespace WFile
 
     #region Collector
 
-        public class Collector : CancelAction, IException
+        public class Collector : Cancellation, IException
         {
             public event Action<Exception> OnError;
 
@@ -191,11 +195,11 @@ namespace WFile
                 CancellationPending += HasCancelledAction;
             }
 
-            public virtual IEnumerable<Item> Collect(string folder)
+            public async virtual Task<IEnumerable<Item>> Collect(string folder)
             {
                 var results = new List<Item>();
 
-                Recurse(folder, ref results);
+                await Task.Run(() => Recurse(folder, ref results));
 
                 return results;
             }
@@ -204,7 +208,7 @@ namespace WFile
             {
                 cancelPending = -1;
 
-                OnError(new Exception("Action cancelled by operator."));
+                if (OnError != null) OnError(new Exception("Action cancelled by operator."));
             }
 
             #region WIN_32 : Recursive directory function
@@ -216,20 +220,22 @@ namespace WFile
             /// <param name="lmi"></param>
             private void Recurse(string directory, ref List<Item> lmi)
             {
-                //IntPtr
+                if (string.IsNullOrWhiteSpace(directory))
+                    return;
+
                 var invalidFileHandle = new IntPtr(-1);
 
-                Win32FindData findData;
+                Win32FindData w32File;
 
-                var findHandle = FindFirstFile(@directory + @"\*", out findData);
+                var hwnd = FindFirstFile(@directory + @"\*", out w32File);
 
-                if (findHandle == invalidFileHandle) return;
+                if (hwnd == invalidFileHandle) return;
 
                 do
                 {
                     if (cancelPending == -1)
                     {
-                        CloseWindowHandle(findHandle);
+                        CloseWindowHandle(hwnd);
 
                         return;
                     }
@@ -253,7 +259,8 @@ namespace WFile
 
                             var name = findData.cFileName;
 
-                            var itm = new Item(name) {
+                            var itm = new Item(name)
+                            {
 
                                 Destination = subfolder != SLASH ? subfolder.Substring(1) + SLASH : null,
 
@@ -266,9 +273,9 @@ namespace WFile
                         }
                     }
                 }
-                while (FindNextFile(findHandle, out findData));
+                while (FindNextFile(hwnd, out w32File));
 
-                CloseWindowHandle(findHandle);
+                CloseWindowHandle(hwnd);
             }
 
             private void CloseWindowHandle(IntPtr hwnd)
