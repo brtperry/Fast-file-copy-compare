@@ -1,8 +1,0 @@
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\bin\Debug\ConsoleApplication1.exe.config
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\bin\Debug\ConsoleApplication1.exe
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\bin\Debug\ConsoleApplication1.pdb
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\bin\Debug\WFile.dll
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\bin\Debug\WFile.pdb
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\obj\Debug\ConsoleApplication1.exe
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\obj\Debug\ConsoleApplication1.pdb
-C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\ConsoleApplication1\ConsoleApplication1\obj\Debug\ConsoleApplication1.csprojResolveAssemblyReference.cache
