@@ -1,0 +1,4 @@
+C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\WFile\WFile\bin\Release\WFile.dll
+C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\WFile\WFile\bin\Release\WFile.pdb
+C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\WFile\WFile\obj\Release\WFile.dll
+C:\Users\pcbpy\Google Drive\Dev\c#\Advanced applications\WinCopy\WFile\WFile\obj\Release\WFile.pdb
