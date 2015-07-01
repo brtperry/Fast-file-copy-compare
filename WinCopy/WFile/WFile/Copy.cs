@@ -240,33 +240,32 @@ namespace WFile
                         return;
                     }
 
-                    if ((findData.dwFileAttributes & FileAttributes.Directory) != 0)
+                    if ((w32File.dwFileAttributes & FileAttributes.Directory) != 0)
                     {
-                        if (findData.cFileName != "." && findData.cFileName != "..")
+                        if (w32File.cFileName != "." && w32File.cFileName != "..")
                         {
-                            var subdirectory = directory + (directory.EndsWith(@"\") ? "" : @"\") + findData.cFileName;
+                            var subdirectory = directory + (directory.EndsWith(@"\") ? "" : @"\") + w32File.cFileName;
 
                             Recurse(subdirectory, ref lmi);
                         }
                     }
                     else
                     {
-                        if (findData.cFileName != "Thumbs.db")
+                        if (w32File.cFileName != "Thumbs.db")
                         {
                             const string SLASH = @"\";
 
                             var subfolder = directory.Remove(0, directory.LastIndexOf(@"\"));
 
-                            var name = findData.cFileName;
+                            var name = w32File.cFileName;
 
                             var itm = new Item(name)
                             {
-
                                 Destination = subfolder != SLASH ? subfolder.Substring(1) + SLASH : null,
 
                                 Source = directory + (subfolder == SLASH ? name : SLASH + name),
 
-                                LastWriteTime = DateTime.FromFileTime((((long)findData.ftLastWriteTime.dwHighDateTime) << 32) | ((uint)findData.ftLastWriteTime.dwLowDateTime))
+                                LastWriteTime = DateTime.FromFileTime((((long)w32File.ftLastWriteTime.dwHighDateTime) << 32) | ((uint)w32File.ftLastWriteTime.dwLowDateTime))
                             };
 
                             lmi.Add(itm);
