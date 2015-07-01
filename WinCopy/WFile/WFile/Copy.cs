@@ -32,7 +32,7 @@ namespace WFile
 
     public abstract class CancelAction
     {
-        public event Action<bool> HasCancelled;
+        public event Action<bool> CancellationPending;
 
         private readonly CancellationTokenSource cancelTrigger;
 
@@ -45,11 +45,8 @@ namespace WFile
         {
             cancelTrigger.Cancel();
 
-            HasCancelled(true);
+            CancellationPending(true);
         }
-
-
-
     }
 
     #region Copy
@@ -68,9 +65,7 @@ namespace WFile
 
             delegate CopyProgressResult CopyProgressRoutine(long totalFileSize, long totalBytesTransferred, long streamSize, long streamBytesTransferred, uint dwStreamNumber, CopyProgressCallbackReason dwCallbackReason, IntPtr hSourceFile, IntPtr hDestinationFile, IntPtr lpData);
 
-            private int cancel;
-
-            //private readonly CancellationTokenSource cancelTrigger;
+            private int cancelPending;
 
             private readonly string destination;
 
@@ -95,19 +90,14 @@ namespace WFile
 
             public Copy(string to)
             {
-                //CancelTrigger = new CancellationTokenSource();
+                CancellationPending += HasCancelledAction;
 
                 destination = to;
             }
 
-            //public void Cancel(object sender, EventArgs e)
-            //{
-            //    cancelTrigger.Cancel();
-            //}
-
             private void HasCancelledAction(bool value)
             {
-                cancel = -1;
+                cancelPending = -1;
             }
 
             public virtual void PerformAction(List<Item> items)
@@ -116,19 +106,12 @@ namespace WFile
 
                 foreach (var item in items)
                 {
-                    if (cancel == -1)
+                    if (cancelPending == -1)
                     {
                         OnError(new Exception("Action cancelled by operator."));
 
                         return;
                     }
-
-                    //if (cancelTrigger.IsCancellationRequested)
-                    //{
-                    //    OnError(new Exception("Action cancelled by operator."));
-
-                    //    return;
-                    //}
 
                     if (string.IsNullOrWhiteSpace(item.Destination))
                     {
@@ -168,7 +151,7 @@ namespace WFile
 
             private void WCopy(Item item)
             {
-                CopyFileEx(item.Source, item.Destination, CopyProgressHandler, IntPtr.Zero, ref cancel, CopyFileFlags.CopyFileRestartable | CopyFileFlags.CopyFileAllowDecryptedDestination);
+                CopyFileEx(item.Source, item.Destination, CopyProgressHandler, IntPtr.Zero, ref cancelPending, CopyFileFlags.CopyFileRestartable | CopyFileFlags.CopyFileAllowDecryptedDestination);
             }
 
             private CopyProgressResult CopyProgressHandler(long total, long transferred, long streamSize, long streamByteTrans, uint dwStreamNumber, CopyProgressCallbackReason reason, IntPtr hSourceFile, IntPtr hDestinationFile, IntPtr lpData)
@@ -197,8 +180,12 @@ namespace WFile
 
     #region Collector
 
-        public class Collector
+        public class Collector : IException
         {
+            public event Action<Exception> OnError;
+
+            private int cancelPending;
+
             public virtual IEnumerable<Item> Collect(string folder)
             {
                 var results = new List<Item>();
@@ -206,6 +193,13 @@ namespace WFile
                 Recurse(folder, ref results);
 
                 return results;
+            }
+
+            private void HasCancelledAction(bool value)
+            {
+                cancelPending = -1;
+
+                OnError(new Exception("Action cancelled by operator."));
             }
 
             #region WIN_32 : Recursive directory function
@@ -228,6 +222,13 @@ namespace WFile
 
                 do
                 {
+                    if (cancelPending == -1)
+                    {
+                        CloseWindowHandle(findHandle);
+
+                        return;
+                    }
+
                     if ((findData.dwFileAttributes & FileAttributes.Directory) != 0)
                     {
                         if (findData.cFileName != "." && findData.cFileName != "..")
@@ -262,7 +263,12 @@ namespace WFile
                 }
                 while (FindNextFile(findHandle, out findData));
 
-                FindClose(findHandle);
+                CloseWindowHandle(findHandle);
+            }
+
+            private void CloseWindowHandle(IntPtr hwnd)
+            {
+                FindClose(hwnd);
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
