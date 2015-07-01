@@ -114,11 +114,6 @@ namespace WFile
 
                     item.Destination += item.Name;
 
-                    Thread.Sleep(10000);
-
-
-                    //item.Destination += item.Name;
-
                     try
                     {
                         Parallel.Invoke(() => WCopy(item));
