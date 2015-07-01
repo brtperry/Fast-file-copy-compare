@@ -89,12 +89,12 @@ namespace WFile
 
             public Copy(string to)
             {
-                CancellationPending += HasCancelledAction;
+                CancellationPending += CancellationPendingReceived;
 
                 destination = to;
             }
 
-            private void HasCancelledAction(bool value)
+            private void CancellationPendingReceived(bool value)
             {
                 cancelPending = -1;
             }
