@@ -85,31 +85,43 @@ namespace WFile
 
             public virtual void PerformAction(List<Item> items)
             {
-                const string slashes = "\\";
-
-                var anyOf = slashes.ToCharArray();
-
                 var counter = items.Count;
 
                 foreach (var item in items)
                 {
                     if (cancelTrigger.IsCancellationRequested)
                     {
+                        OnError(new Exception("Action cancelled by operator."));
+
                         return;
                     }
 
-                    if (!Directory.Exists(item.Destination))
+                    if (string.IsNullOrWhiteSpace(item.Destination))
                     {
-                        Directory.CreateDirectory(item.Destination);
+                        item.Destination = destination;
+                    }
+                    else
+                    {
+                        var sub = destination + item.Destination;
+
+                        if (!Directory.Exists(sub))
+                        {
+                            Directory.CreateDirectory(sub);
+                        }
+
+                        item.Destination = sub;
                     }
 
-                    item.Destination = destination + item.Name;
+                    item.Destination += item.Name;
 
-                    var itemToCopy = item;
+                    Thread.Sleep(10000);
+
+
+                    //item.Destination += item.Name;
 
                     try
                     {
-                        Parallel.Invoke(() => WCopy(itemToCopy));
+                        Parallel.Invoke(() => WCopy(item));
 
                         if (OnProgressStep != null)
                         {
@@ -171,18 +183,17 @@ namespace WFile
             /// Recursive function to populate a MyImage list.
             /// </summary>
             /// <param name="directory"></param>
-            /// <param name="level"></param>
             /// <param name="lmi"></param>
             private void Recurse(string directory, ref List<Item> lmi)
             {
                 //IntPtr
-                var invalidHandleValue = new IntPtr(-1);
+                var invalidFileHandle = new IntPtr(-1);
 
                 Win32FindData findData;
 
                 var findHandle = FindFirstFile(@directory + @"\*", out findData);
 
-                if (findHandle == invalidHandleValue) return;
+                if (findHandle == invalidFileHandle) return;
 
                 do
                 {
@@ -199,34 +210,22 @@ namespace WFile
                     {
                         if (findData.cFileName != "Thumbs.db")
                         {
-                            const string SLASH = @"\\";
+                            const string SLASH = @"\";
 
-                            var hFt2 = (((long)findData.ftLastWriteTime.dwHighDateTime) << 32) | ((uint)findData.ftLastWriteTime.dwLowDateTime);
+                            var subfolder = directory.Remove(0, directory.LastIndexOf(@"\"));
 
-                            var place = directory;
+                            var name = findData.cFileName;
 
-                            var itm = new Item();
+                            var itm = new Item(name) {
 
-                            itm.Name = findData.cFileName;
+                                Destination = subfolder != SLASH ? subfolder + SLASH : null,
 
-                            itm.Destination = directory.Remove(0, directory.LastIndexOf(@"\")) + SLASH + itm.Name;
+                                Source = directory + (subfolder == SLASH ? name : SLASH + name),
 
-                            itm.Source = directory + SLASH + itm.Name;
-
-                            itm.LastWriteTime = DateTime.FromFileTime(hFt2);
+                                LastWriteTime = DateTime.FromFileTime((((long)findData.ftLastWriteTime.dwHighDateTime) << 32) | ((uint)findData.ftLastWriteTime.dwLowDateTime))
+                            };
 
                             lmi.Add(itm);
-
-                            //lmi.Add(new Item
-                            //{
-                            //    Destination = Destination = place.Remove(0, directory.LastIndexOf(@"\")),
-
-                            //    Name = findData.cFileName,
-
-                            //    Source = place,
-
-                            //    LastWriteTime = DateTime.FromFileTime(hFt2)
-                            //});
                         }
                     }
                 }
@@ -323,6 +322,14 @@ namespace WFile
             public string Source;
 
             public DateTime LastWriteTime;
+
+            public Item()
+            { }
+
+            public Item(string n)
+            {
+                Name = n;
+            }
 
             public override string ToString()
             {
