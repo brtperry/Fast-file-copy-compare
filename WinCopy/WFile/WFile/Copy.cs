@@ -103,10 +103,10 @@ namespace WFile
             {
                 var counter = items.Count;
 
-                await Task.Run(() =>
+                await Task.Run(() => {
 
-                    Parallel.ForEach(items, item => {
-
+                    foreach (var item in items)
+                    {
                         if (cancelPending == -1)
                         {
                             ExceptionHappended(new Exception("Action cancelled by operator."));
@@ -145,7 +145,15 @@ namespace WFile
                         {
                             ExceptionHappended(ex);
                         }
-                    }));
+                    }
+                
+                });
+
+                    //Parallel.ForEach(items, item => {
+
+
+                    //})
+                
             }
 
             private void ExceptionHappended(Exception ex)
