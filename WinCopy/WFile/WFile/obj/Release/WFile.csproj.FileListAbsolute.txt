@@ -6,4 +6,3 @@ C:\Users\pcbpy\Documents\GitHub\Fast-file-copy-compare\WinCopy\WFile\WFile\bin\R
 C:\Users\pcbpy\Documents\GitHub\Fast-file-copy-compare\WinCopy\WFile\WFile\bin\Release\WFile.pdb
 C:\Users\pcbpy\Documents\GitHub\Fast-file-copy-compare\WinCopy\WFile\WFile\obj\Release\WFile.dll
 C:\Users\pcbpy\Documents\GitHub\Fast-file-copy-compare\WinCopy\WFile\WFile\obj\Release\WFile.pdb
-C:\Users\pcbpy\Documents\GitHub\Fast-file-copy-compare\WinCopy\WFile\WFile\obj\Release\WFile.csprojResolveAssemblyReference.cache

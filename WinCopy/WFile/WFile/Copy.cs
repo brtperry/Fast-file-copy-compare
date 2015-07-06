@@ -17,7 +17,7 @@ namespace WFile
 
     interface ICopy
     {
-        event Action<int, int> OnBytesCopied;
+        event Action<long, long> OnBytesCopied;
 
         event Action<int> OnProgressStep;
     }
@@ -33,16 +33,16 @@ namespace WFile
     {
         public event Action<bool> CancellationPending;
 
-        private readonly CancellationTokenSource cancelTrigger;
+        private readonly CancellationTokenSource cancellationToken;
 
         public Cancellation()
         {
-            cancelTrigger = new CancellationTokenSource();
+            cancellationToken = new CancellationTokenSource();
         }
 
         public void Cancel(object sender, EventArgs e)
         {
-            cancelTrigger.Cancel();
+            cancellationToken.Cancel();
 
             CancellationPending(true);
         }
@@ -54,7 +54,7 @@ namespace WFile
         {
             public event Action<Exception> OnError;
 
-            public event Action<int, int> OnBytesCopied;
+            public event Action<long, long> OnBytesCopied;
 
             public event Action<int> OnProgressStep;
 
@@ -103,6 +103,11 @@ namespace WFile
             {
                 var counter = items.Count;
 
+                //Parallel.ForEach(items, item =>
+                //    {
+                //        Console.WriteLine(item.Name);
+                //    });
+
                 await Task.Run(() => {
 
                     foreach (var item in items)
@@ -148,12 +153,6 @@ namespace WFile
                     }
                 
                 });
-
-                    //Parallel.ForEach(items, item => {
-
-
-                    //})
-                
             }
 
             private void ExceptionHappended(Exception ex)
@@ -178,7 +177,7 @@ namespace WFile
 
                         if (OnBytesCopied != null)
                         {
-                            OnBytesCopied((int)total, (int)transferred);
+                            OnBytesCopied(total, transferred);
                         }
 
                         break;
@@ -198,13 +197,17 @@ namespace WFile
 
             private int cancelPending;
 
+            private string root;
+
             public Collector()
             {
-                CancellationPending += HasCancelledAction;
+                CancellationPending += CancellationPendingReceived;
             }
 
             public async virtual Task<IEnumerable<Item>> Collect(string folder)
             {
+                root = folder;
+
                 var results = new List<Item>();
 
                 await Task.Run(() => Recurse(folder, ref results));
@@ -212,7 +215,7 @@ namespace WFile
                 return results;
             }
 
-            private void HasCancelledAction(bool value)
+            private void CancellationPendingReceived(bool value)
             {
                 cancelPending = -1;
 
@@ -263,15 +266,15 @@ namespace WFile
                         {
                             const string SLASH = @"\";
 
-                            var subfolder = directory.Remove(0, directory.LastIndexOf(@"\"));
+                            var sub = directory.Substring(root.Length);
 
                             var name = w32File.cFileName;
 
                             var itm = new Item(name)
                             {
-                                Destination = subfolder != SLASH ? subfolder.Substring(1) + SLASH : null,
+                                Destination = sub != "" ? sub + SLASH : sub,
 
-                                Source = directory + (subfolder == SLASH ? name : SLASH + name),
+                                Source = directory + (sub != "" ? SLASH + name : name),
 
                                 LastWriteTime = DateTime.FromFileTime((((long)w32File.ftLastWriteTime.dwHighDateTime) << 32) | ((uint)w32File.ftLastWriteTime.dwLowDateTime))
                             };
@@ -379,9 +382,6 @@ namespace WFile
 
             public DateTime LastWriteTime;
 
-            public Item()
-            { }
-
             public Item(string n)
             {
                 Name = n;
@@ -389,7 +389,7 @@ namespace WFile
 
             public override string ToString()
             {
-                return string.Format("{ Name : {0}, Source : {1}, Destination : {2} }", Name, Source, Destination);
+                return string.Format("Name: {0}, Source: {1}, Destination: {2}", Name, Source, Destination);
             }
         }
 
