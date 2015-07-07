@@ -19,7 +19,9 @@ namespace WFile
     {
         event Action<long, long> OnBytesCopied;
 
-        event Action<int> OnProgressStep;
+        event Action<string> OnBegincopy;
+
+        Task Start(List<Item> items);
     }
 
     interface ICompared
@@ -56,7 +58,7 @@ namespace WFile
 
             public event Action<long, long> OnBytesCopied;
 
-            public event Action<int> OnProgressStep;
+            public event Action<string> OnBegincopy;
 
             [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
             [return: MarshalAs(UnmanagedType.Bool)]
@@ -99,10 +101,8 @@ namespace WFile
                 cancelPending = -1;
             }
 
-            public virtual async Task PerformAction(List<Item> items)
+            public virtual async Task Start(List<Item> items)
             {
-                var counter = items.Count;
-
                 //Parallel.ForEach(items, item =>
                 //    {
                 //        Console.WriteLine(item.Name);
@@ -139,19 +139,20 @@ namespace WFile
 
                         try
                         {
-                            Parallel.Invoke(() => WCopy(item));
+                            Thread.Sleep(5000);
 
-                            if (OnProgressStep != null)
+                            if (OnBegincopy != null)
                             {
-                                OnProgressStep(--counter);
+                                OnBegincopy(item.Name);
                             }
+
+                            Parallel.Invoke(() => WCopy(item));
                         }
                         catch (Exception ex)
                         {
                             ExceptionHappended(ex);
                         }
                     }
-                
                 });
             }
 
@@ -169,9 +170,9 @@ namespace WFile
             {
                 switch (reason)
                 {
-                    case CopyProgressCallbackReason.CallbackStreamSwitch:
+                    //case CopyProgressCallbackReason.CallbackStreamSwitch:
 
-                        break;
+                    //    break;
 
                     case CopyProgressCallbackReason.CallbackChunkFinished:
 
