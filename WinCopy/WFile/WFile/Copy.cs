@@ -139,8 +139,6 @@ namespace WFile
 
                         try
                         {
-                            Thread.Sleep(5000);
-
                             if (OnBegincopy != null)
                             {
                                 OnBegincopy(item.Name);
